@@ -26,3 +26,7 @@ Thumbs.db
 # IDE Files
 .vscode/
 .idea/
+
+# Research Documents
+research/provider-onboarding
+devops/hostinger-setup
