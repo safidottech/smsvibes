@@ -95,7 +95,7 @@ export const loginUser = async (
       accountType: user.accountType,
     },
     jwtSecret,
-    { expiresIn: jwtExpiresIn }
+    { expiresIn: jwtExpiresIn as any }
   );
 
   // ── 7. Update lastLoginAt (fire-and-forget; non-blocking) ───────────────
