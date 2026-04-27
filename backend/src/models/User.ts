@@ -15,8 +15,7 @@ export interface IUser extends Document {
   suspendedAt?: Date | null;
   bannedAt?: Date | null;
   lastLoginAt?: Date | null;
-  passwordResetToken?: string | null;
-  passwordResetExpires?: Date | null;
+
   createdAt: Date;
   updatedAt: Date;
 }
@@ -86,14 +85,7 @@ const UserSchema = new Schema<IUser>(
       type: Date, 
       default: null 
     },
-    passwordResetToken: {
-      type: String,
-      default: null,
-    },
-    passwordResetExpires: {
-      type: Date,
-      default: null,
-    },
+
   },
   {
     timestamps: true, // Automatically adds createdAt and updatedAt fields
