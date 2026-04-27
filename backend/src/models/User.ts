@@ -5,6 +5,8 @@ export interface IUser extends Document {
   email: string;
   passwordHash?: string | null;
   googleId?: string | null;
+  passwordResetToken?: string | null;
+  passwordResetExpires?: Date | null;
   role: 'superadmin' | 'admin' | 'user';
   accountType: 'b2c' | 'b2b';
   isEmailVerified: boolean;
@@ -37,6 +39,16 @@ const UserSchema = new Schema<IUser>(
       type: String, 
       sparse: true, 
       default: null 
+    },
+    passwordResetToken: {
+      type: String,
+      default: null,
+      select: false
+    },
+    passwordResetExpires: {
+      type: Date,
+      default: null,
+      select: false
     },
     role: { 
       type: String, 
