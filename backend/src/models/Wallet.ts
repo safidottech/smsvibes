@@ -4,6 +4,7 @@ export interface IWallet extends Document {
   userId: mongoose.Types.ObjectId;
   available: number;
   held: number;
+  totalBalance: number;
   createdAt: Date;
   updatedAt: Date;
 }
