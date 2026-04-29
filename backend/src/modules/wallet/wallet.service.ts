@@ -65,3 +65,57 @@ export const holdBalanceForRequest = async (
   // We use the non-null assertion because updatedWallet is guaranteed by the check inside the transaction.
   return updatedWallet!;
 };
+
+/**
+ * releaseEscrow
+ * 
+ * Finalizes a charge: Reduces the 'held' balance permanently.
+ * This is called when an OTP is successfully delivered.
+ * 
+ * Logic:
+ * 1. Uses a MongoDB session (transaction) for consistency.
+ * 2. Uses findOneAndUpdate with a check to ensure 'held' balance covers the release.
+ * 3. Throws INSUFFICIENT_HELD_BALANCE if the user doesn't have enough held funds.
+ * 4. Strictly follows THE CENTS LAW.
+ * 
+ * @param userId - The ID of the user whose escrow is being released.
+ * @param amountInCents - The amount to release, in integer cents.
+ * @returns The updated Wallet document.
+ */
+export const releaseEscrow = async (
+  userId: string,
+  amountInCents: number
+): Promise<IWallet> => {
+  const cleanAmount = Math.round(amountInCents);
+  const session: ClientSession = await mongoose.startSession();
+  let updatedWallet: IWallet | null = null;
+
+  try {
+    await session.withTransaction(async () => {
+      updatedWallet = await Wallet.findOneAndUpdate(
+        {
+          userId,
+          held: { $gte: cleanAmount }, // The Check: Atomic verification of held funds
+        },
+        {
+          $inc: {
+            held: -cleanAmount, // The Update: Reduce held balance permanently
+          },
+        },
+        {
+          new: true,
+          session,
+          runValidators: true
+        }
+      ).exec();
+
+      if (!updatedWallet) {
+        throw new Error('INSUFFICIENT_HELD_BALANCE');
+      }
+    });
+  } finally {
+    await session.endSession();
+  }
+
+  return updatedWallet!;
+};
