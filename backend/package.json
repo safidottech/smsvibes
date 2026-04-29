@@ -2,6 +2,7 @@
   "name": "smsvibes-backend",
   "version": "1.0.0",
   "description": "SMSVIBES High-Scale Multi-Provider OTP Platform",
+  "type": "module",
   "main": "dist/server.js",
   "scripts": {
     "start": "node dist/server.js",
