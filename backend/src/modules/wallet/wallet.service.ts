@@ -119,3 +119,58 @@ export const releaseEscrow = async (
 
   return updatedWallet!;
 };
+
+/**
+ * refundEscrow
+ * 
+ * Restores funds: Moves money from 'held' status back to 'available' status.
+ * This is triggered when an OTP request fails across all providers or is cancelled.
+ * 
+ * Logic:
+ * 1. Uses a MongoDB session (transaction) for atomic integrity.
+ * 2. Uses findOneAndUpdate with a check to ensure 'held' balance covers the refund.
+ * 3. Throws INSUFFICIENT_HELD_BALANCE if the user doesn't have enough held funds.
+ * 4. Strictly follows THE CENTS LAW.
+ * 
+ * @param userId - The ID of the user whose escrow is being refunded.
+ * @param amountInCents - The amount to refund, in integer cents.
+ * @returns The updated Wallet document.
+ */
+export const refundEscrow = async (
+  userId: string,
+  amountInCents: number
+): Promise<IWallet> => {
+  const cleanAmount = Math.round(amountInCents);
+  const session: ClientSession = await mongoose.startSession();
+  let updatedWallet: IWallet | null = null;
+
+  try {
+    await session.withTransaction(async () => {
+      updatedWallet = await Wallet.findOneAndUpdate(
+        {
+          userId,
+          held: { $gte: cleanAmount }, // The Check: Atomic verification of held funds
+        },
+        {
+          $inc: {
+            available: cleanAmount, // The Update: Restore to available
+            held: -cleanAmount,      // The Update: Remove from held
+          },
+        },
+        {
+          new: true,
+          session,
+          runValidators: true
+        }
+      ).exec();
+
+      if (!updatedWallet) {
+        throw new Error('INSUFFICIENT_HELD_BALANCE');
+      }
+    });
+  } finally {
+    await session.endSession();
+  }
+
+  return updatedWallet!;
+};
