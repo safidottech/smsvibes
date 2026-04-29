@@ -174,3 +174,66 @@ export const refundEscrow = async (
 
   return updatedWallet!;
 };
+
+/**
+ * cancelWithFee
+ * 
+ * Specialized Cancellation: Handles the edge case where an OTP has arrived server-side but the 
+ * user tries to cancel. A 12% fee is applied to cover provider costs.
+ * 
+ * Logic:
+ * 1. Calculate a 12% fee (rounded to nearest integer cent).
+ * 2. Calculate the refund: refund = originalAmount - fee.
+ * 3. Use a MongoDB session (transaction) for atomic integrity.
+ * 4. Verify user has enough 'held' balance.
+ * 5. Update: Decrement 'held' by full amount, Increment 'available' by refund amount.
+ * 
+ * Math Integrity (The Cents Law):
+ * By calculating the fee first and subtracting it from the total, we ensure that
+ * fee + refund always equals the original amount, preventing cent leaks.
+ * 
+ * @param userId - The ID of the user.
+ * @param amountInCents - The original held amount.
+ * @returns Object containing the updated wallet and the calculated fee.
+ */
+export const cancelWithFee = async (
+  userId: string,
+  amountInCents: number
+): Promise<{ updatedWallet: IWallet; feeAmount: number }> => {
+  const cleanAmount = Math.round(amountInCents);
+  const feeAmount = Math.round(cleanAmount * 0.12);
+  const refundAmount = cleanAmount - feeAmount;
+
+  const session: ClientSession = await mongoose.startSession();
+  let updatedWallet: IWallet | null = null;
+
+  try {
+    await session.withTransaction(async () => {
+      updatedWallet = await Wallet.findOneAndUpdate(
+        {
+          userId,
+          held: { $gte: cleanAmount }, // The Check: Atomic verification of held funds
+        },
+        {
+          $inc: {
+            available: refundAmount, // The Update: Restore partially to available
+            held: -cleanAmount,      // The Update: Remove full amount from held
+          },
+        },
+        {
+          new: true,
+          session,
+          runValidators: true
+        }
+      ).exec();
+
+      if (!updatedWallet) {
+        throw new Error('INSUFFICIENT_HELD_BALANCE');
+      }
+    });
+  } finally {
+    await session.endSession();
+  }
+
+  return { updatedWallet: updatedWallet!, feeAmount };
+};
