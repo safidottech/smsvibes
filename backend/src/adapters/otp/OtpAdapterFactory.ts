@@ -4,7 +4,7 @@ import { BaseOtpAdapter } from './BaseOtpAdapter';
  * TODO: Task S4.3-S4.5 - Uncomment these imports once the concrete adapter files are created.
  */
 // import { FiveSimAdapter } from './FiveSimAdapter';
-// import { SmsActivateAdapter } from './SmsActivateAdapter';
+import { SmsActivateAdapter } from './SmsActivateAdapter';
 // import { GrizzlySmsAdapter } from './GrizzlySmsAdapter';
 
 /**
@@ -12,7 +12,7 @@ import { BaseOtpAdapter } from './BaseOtpAdapter';
  * These will be replaced by the actual imports above.
  */
 const FiveSimAdapter: any = null;
-const SmsActivateAdapter: any = null;
+// const SmsActivateAdapter: any = null;
 const GrizzlySmsAdapter: any = null;
 
 /**
@@ -42,7 +42,7 @@ export class OtpAdapterFactory {
    */
   static create(provider: { slug: string; apiKey: string; baseUrl: string }): BaseOtpAdapter {
     const AdapterClass = ADAPTERS[provider.slug];
-    
+
     if (!AdapterClass && AdapterClass !== null) {
       throw new Error(`OTP Adapter not found for provider slug: ${provider.slug}`);
     }
