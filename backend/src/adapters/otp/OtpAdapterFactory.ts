@@ -4,16 +4,16 @@ import { BaseOtpAdapter } from './BaseOtpAdapter';
  * TODO: Task S4.3-S4.5 - Uncomment these imports once the concrete adapter files are created.
  */
 import { FiveSimAdapter } from './FiveSimAdapter';
-// import { SmsActivateAdapter } from './SmsActivateAdapter';
-// import { GrizzlySmsAdapter } from './GrizzlySmsAdapter';
+import { SmsActivateAdapter } from './SmsActivateAdapter';
+import { GrizzlySmsAdapter } from './GrizzlySmsAdapter';
 
 /**
  * Placeholder constants to prevent IDE errors until concrete adapters are implemented.
  * These will be replaced by the actual imports above.
  */
-// const FiveSimAdapter: any = null; // Removed as it is now imported
-const SmsActivateAdapter: any = null;
-const GrizzlySmsAdapter: any = null;
+// const FiveSimAdapter: any = null;
+// const SmsActivateAdapter: any = null;
+// const GrizzlySmsAdapter: any = null;
 
 /**
  * Registry Mapping: Maps provider unique slugs to their respective adapter classes.
@@ -42,7 +42,7 @@ export class OtpAdapterFactory {
    */
   static create(provider: { slug: string; apiKey: string; baseUrl: string }): BaseOtpAdapter {
     const AdapterClass = ADAPTERS[provider.slug];
-    
+
     if (!AdapterClass && AdapterClass !== null) {
       throw new Error(`OTP Adapter not found for provider slug: ${provider.slug}`);
     }
