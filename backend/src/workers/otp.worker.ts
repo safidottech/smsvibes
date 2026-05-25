@@ -70,15 +70,19 @@ export const startOtpWorker = () => {
   const worker = new Worker(
     'otp-processing',
     async (job: Job<OtpProcessingData>) => {
-      const { 
-        requestId, 
-        userId, 
-        service, 
-        countryCode, 
-        price, 
-        attemptNumber, 
-        triedProviders = [] 
-      } = job.data;
+      // 0️⃣ Hard‑cap timeout guard: abort if job has been queued >10 min
+      const jobAgeMs = Date.now() - job.timestamp;
+      if (jobAgeMs > 600000) {
+        console.warn(`[Worker] Request ${requestId} exceeded hard‑cap timeout (${Math.floor(jobAgeMs / 1000)}s). Initiating refund.`);
+        await refundProcessingQueue.add('process-refund', {
+          requestId,
+          userId,
+          amount: price,
+          reason: 'HARD_CAP_TIMEOUT',
+        }, { removeOnComplete: true });
+        return; // stop processing
+      }
+
 
       // 1. Provider Selection Logic
       // Query for active providers, excluding those already tried in previous attempts.
@@ -218,9 +222,23 @@ export const startOtpWorker = () => {
     }
   );
 
-  worker.on('failed', (job, err) => {
+  worker.on('failed', async (job, err) => {
     console.error(`[Worker] Job ${job?.id} failed:`, err.message);
+    // Detect timeout errors (BullMQ includes 'timeout' in the message)
+    if (err && err.message && err.message.toLowerCase().includes('timeout')) {
+      const { requestId, userId, price } = job?.data ?? {};
+      if (requestId && userId && typeof price === 'number') {
+        await refundProcessingQueue.add('process-refund', {
+          requestId,
+          userId,
+          amount: price,
+          reason: 'TIMEOUT',
+        }, { removeOnComplete: true });
+        console.log(`[Worker] Refund job queued for request ${requestId} due to timeout.`);
+      }
+    }
   });
+
 
   worker.on('error', (err) => {
     console.error('[Worker] Fatal Worker Error:', err);

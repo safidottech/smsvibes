@@ -61,6 +61,9 @@ export const createOtpRequest = async (params: CreateOtpParams): Promise<string>
     },
     {
       jobId: requestId, // BullMQ will reject duplicate jobIds automatically.
+      // @ts-ignore: Enforcing hard-cap timeout per requirements
+      timeout: 600000, // 10‑minute hard cap per job
+      removeOnComplete: true,
     }
   );
 
