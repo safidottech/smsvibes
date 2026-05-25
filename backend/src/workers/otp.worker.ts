@@ -70,6 +70,16 @@ export const startOtpWorker = () => {
   const worker = new Worker(
     'otp-processing',
     async (job: Job<OtpProcessingData>) => {
+      const { 
+        requestId, 
+        userId, 
+        service, 
+        countryCode, 
+        price, 
+        attemptNumber, 
+        triedProviders = [] 
+      } = job.data;
+
       // 0️⃣ Hard‑cap timeout guard: abort if job has been queued >10 min
       const jobAgeMs = Date.now() - job.timestamp;
       if (jobAgeMs > 600000) {
