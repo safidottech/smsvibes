@@ -70,14 +70,14 @@ export const startOtpWorker = () => {
   const worker = new Worker(
     'otp-processing',
     async (job: Job<OtpProcessingData>) => {
-      const { 
-        requestId, 
-        userId, 
-        service, 
-        countryCode, 
-        price, 
-        attemptNumber, 
-        triedProviders = [] 
+      const {
+        requestId,
+        userId,
+        service,
+        countryCode,
+        price,
+        attemptNumber,
+        triedProviders = []
       } = job.data;
 
       // 0️⃣ Hard‑cap timeout guard: abort if job has been queued >10 min
@@ -135,7 +135,7 @@ export const startOtpWorker = () => {
       }
 
       console.log(`[Worker] Request ${requestId}: Attempt ${attemptNumber} using ${provider.slug} (Timeout: ${timeout}s)`);
-      
+
       // Update job data with calculated timeout for record-keeping
       await job.updateData({
         ...job.data,
@@ -156,7 +156,7 @@ export const startOtpWorker = () => {
         if (isSuccessful) {
           // --- SUCCESS PATH ---
           const simulatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
-          
+
           // Update OtpRequest document
           await OtpRequest.findByIdAndUpdate(requestId, {
             status: 'received',
@@ -255,6 +255,6 @@ export const startOtpWorker = () => {
   });
 
   console.log('🚀 OTP Processing Worker started and listening to "otp-processing" queue.');
-  
+
   return worker;
 };
